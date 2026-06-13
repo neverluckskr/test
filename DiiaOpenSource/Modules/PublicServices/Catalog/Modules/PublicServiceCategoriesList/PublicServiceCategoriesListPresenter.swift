@@ -128,33 +128,13 @@ final class PublicServiceCategoriesListPresenter: NSObject, PublicServiceCategor
     }
     
     func updateServices() {
-        let isFirstLoading = model.allItems.isEmpty
-        
-        if isFirstLoading {
-            view.setState(state: .loading)
+        // Frontend-only build: there is no backend. If a cached catalog exists
+        // we render it, otherwise we just show an empty, ready list. The network
+        // is never hit, so no error alert is shown.
+        if let cachedResponse = storage?.getPublicServicesResponse() {
+            processResponse(response: cachedResponse)
         }
-        
-        apiClient
-            .getPublicServices()
-            .observe { [weak self] (event) in
-                switch event {
-                case .next(let response):
-                    self?.storage?.savePublicServicesResponse(response: response)
-                    self?.processResponse(response: response)
-                case .failed(let error):
-                    if let cachedResponse = self?.storage?.getPublicServicesResponse() {
-                        self?.processResponse(response: cachedResponse)
-                    } else {
-                        self?.showNoInternetTemplate(error)
-                    }
-                default:
-                    return
-                }
-                if isFirstLoading {
-                    self?.view.setState(state: .ready)
-                }
-            }
-            .dispose(in: disposedBag)
+        view.setState(state: .ready)
     }
 
     func checkReachability() {

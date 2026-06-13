@@ -102,27 +102,9 @@ class DocumentsLoader: NSObject, DocumentsLoaderProtocol {
     }
 
     private func fetchDocs(in group: DispatchGroup) {
-        guard irrelevantDocs.count > 0 else {
-            return
-        }
-
-        group.enter()
-        apiClient.getDocuments(irrelevantDocs).observe { [weak self] (event) in
-            guard let self = self else { return }
-            self.irrelevantDocs = []
-            switch event {
-            case .completed:
-                break
-            case .failed:
-                group.leave()
-            case .next(let documentsResponse):
-                self.orderService.setOrder(order: documentsResponse.documentsTypeOrder ?? [], synchronize: false)
-                self.saveDocs(documentsResponse: documentsResponse)
-                self.actualizeLastDocUpdate()
-                self.haveUpdates = true
-                group.leave()
-            }
-        }.dispose(in: bag)
+        // Frontend-only build: there is no backend, so we never request documents.
+        // Whatever is stored locally is shown as-is; the network is not hit.
+        irrelevantDocs = []
     }
     
     // MARK: - Saving
