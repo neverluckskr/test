@@ -21,6 +21,7 @@ workflows:
 
       - name: Build (no signing)
         script: |
+          set -o pipefail
           xcodebuild build \
             -project DiiaOpenSource.xcodeproj \
             -scheme DiiaOpenSource \
@@ -32,8 +33,14 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO \
             SWIFT_STRICT_CONCURRENCY=minimal \
-            2>&1 | tee build_log.txt | grep -E "error:|warning:|BUILD FAILED|BUILD SUCCEEDED" || true
-          grep -q "BUILD SUCCEEDED" build_log.txt
+            SKIP_SWIFTLINT=YES \
+            2>&1 | tee build_log.txt
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "===== BUILD FAILED — error context ====="
+            grep -nE "error:|fatal error|Command .* failed|ld: |BUILD FAILED" build_log.txt | tail -50 || true
+            exit "$status"
+          fi
 
       - name: Package IPA (unsigned)
         script: |
