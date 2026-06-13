@@ -1,0 +1,43 @@
+workflows:
+  ios-unsigned-ipa:
+    name: Build Unsigned IPA
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+
+    environment:
+      xcode: "26.0"
+
+    scripts:
+      - name: Resolve Swift Package dependencies
+        script: |
+          xcodebuild -resolvePackageDependencies \
+            -project DiiaOpenSource.xcodeproj \
+            -scheme DiiaOpenSource
+
+      - name: Build (no signing)
+        script: |
+          xcodebuild build \
+            -project DiiaOpenSource.xcodeproj \
+            -scheme DiiaOpenSource \
+            -configuration Debug \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            SWIFT_STRICT_CONCURRENCY=minimal \
+            2>&1 | tee build_log.txt | grep -E "error:|warning:|BUILD FAILED|BUILD SUCCEEDED" || true
+          grep -q "BUILD SUCCEEDED" build_log.txt
+
+      - name: Package IPA (unsigned)
+        script: |
+          APP_PATH=$(find build/DerivedData -name "*.app" -path "*Debug-iphoneos*" | head -1)
+          mkdir -p build/Payload
+          cp -r "$APP_PATH" build/Payload/
+          cd build
+          zip -r DiiaOpenSource.ipa Payload
+
+    artifacts:
+      - build/DiiaOpenSource.ipa
+      - build_log.txt
