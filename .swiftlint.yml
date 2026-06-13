@@ -3,6 +3,9 @@ warning_threshold: 30
 excluded:
   - DiiaOpenSource/Resources/
   - DiiaOpenSource/Resources/Strings/Localizable.swift
+  - build
+  - DerivedData
+  - .build
 
 disabled_rules:
   - control_statement
