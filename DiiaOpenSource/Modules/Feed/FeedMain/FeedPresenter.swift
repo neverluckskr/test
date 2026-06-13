@@ -79,32 +79,10 @@ final class FeedPresenter: FeedAction {
     
     // MARK: - API
     @objc private func fetchFeedScreen() {
-        if isFetching { return }
-        isFetching = true
-        view.setLoadingState(.loading)
-        apiClient.getFeedScreen().observe { [weak self] event in
-            guard let self else { return }
-            switch event {
-            case .next(let response):
-                self.view.configure(with: response)
-                self.setNetworkStatus(isReachable: true)
-                self.needUpdates = false
-                self.response = response
-            case .failed(let error):
-                if error != .noInternet {
-                    self.handleError(
-                        error: error,
-                        retryAction: { [weak self] in
-                            self?.fetchFeedScreen()
-                        })
-                }
-            default:
-                return
-            }
-            self.view.setLoadingState(.ready)
-            self.isFetching = false
-        }
-        .dispose(in: bag)
+        // Frontend-only build: there is no backend, so we never request the feed
+        // screen. The offline model configured in `configureView()` stays on
+        // screen and no error alert is shown.
+        view.setLoadingState(.ready)
     }
     
     // MARK: - Private Methods
